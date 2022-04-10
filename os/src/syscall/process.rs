@@ -4,9 +4,6 @@ use crate::config::{MAX_APP_NUM, MAX_SYSCALL_NUM};
 use crate::task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,TASK_MANAGER};
 use crate::timer::get_time_us;
 
-const SYSCALL_TASK_INFO: usize = 410;
-const SYSCALL_GET_TIME: usize = 169;
-
 #[repr(C)]
 #[derive(Debug)]
 pub struct TimeVal {
@@ -47,31 +44,16 @@ pub fn sys_get_time(ts: *mut TimeVal, _tz: usize) -> isize {
 
 /// YOUR JOB: Finish sys_task_info to pass testcases
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
-    /// Change the status of current `Running` task into `Exited`.
-    // fn mark_current_exited(&self) {
+    // Change the status of current `Running` task into `Exited`.
     let inner = TASK_MANAGER.inner.exclusive_access();
     let current = inner.current_task;
-    // let current_task_status=inner.tasks[current].task_status;
-    let current_task_start_time=inner.tasks[current].start_time;
-    let current_task_syscall_times=inner.tasks[current].syscall_times;
-    // println!("{}",inner.tasks[current].syscall_times[SYSCALL_TASK_INFO]);
-    
-    // }
-    // println!("{}",current_task_start_time);
-
-    
     unsafe{
         *ti=TaskInfo{
-            status:TaskStatus::Running,
-            // status:current_status,
-            syscall_times: current_task_syscall_times,//[12; MAX_SYSCALL_NUM],//inner.tasks[current].syscall_times,//,//[0; MAX_SYSCALL_NUM],
-            time: get_time_us()/1_000-current_task_start_time/1_000,
+            status:inner.tasks[current].task_status,
+            syscall_times: inner.tasks[current].syscall_times,
+            time: get_time_us()/1_000-inner.tasks[current].start_time/1_000,
         };
-        // (*ti).syscall_times[SYSCALL_TASK_INFO]=inner.tasks[current].syscall_times[SYSCALL_TASK_INFO];
-        // println!("info {}",inner.tasks[current].syscall_times[SYSCALL_TASK_INFO]);
     }
-    // println!("info {}",inner.tasks[current].syscall_times[SYSCALL_TASK_INFO]);
-    // println!("time {}",inner.tasks[current].syscall_times[SYSCALL_GET_TIME]);
     drop(inner);
     0
 }
