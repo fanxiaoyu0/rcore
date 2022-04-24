@@ -24,19 +24,22 @@ mod process;
 
 use fs::*;
 use process::*;
+use crate::task::{TASK_MANAGER};
 
 /// handle syscall exception with `syscall_id` and other arguments
 pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
     // LAB1: You may need to update syscall info here.
+    let mut inner = TASK_MANAGER.inner.exclusive_access();
+    let current = inner.current_task;
     match syscall_id {
-        SYSCALL_WRITE => sys_write(args[0], args[1] as *const u8, args[2]),
-        SYSCALL_EXIT => sys_exit(args[0] as i32),
-        SYSCALL_YIELD => sys_yield(),
-        SYSCALL_GET_TIME => sys_get_time(args[0] as *mut TimeVal, args[1]),
+        SYSCALL_WRITE => {inner.tasks[current].syscall_times[SYSCALL_WRITE]+=1;drop(inner);sys_write(args[0], args[1] as *const u8, args[2])},
+        SYSCALL_EXIT => {inner.tasks[current].syscall_times[SYSCALL_EXIT]+=1;drop(inner);sys_exit(args[0] as i32)},
+        SYSCALL_YIELD => {inner.tasks[current].syscall_times[SYSCALL_YIELD]+=1;drop(inner);sys_yield()},
+        SYSCALL_GET_TIME => {inner.tasks[current].syscall_times[SYSCALL_GET_TIME]+=1;drop(inner);sys_get_time(args[0] as *mut TimeVal, args[1])},
         SYSCALL_MMAP => sys_mmap(args[0], args[1], args[2]),
         SYSCALL_MUNMAP => sys_munmap(args[0], args[1]),
         SYSCALL_SET_PRIORITY => sys_set_priority(args[0] as isize),
-        SYSCALL_TASK_INFO => sys_task_info(args[0] as *mut TaskInfo),
+        SYSCALL_TASK_INFO => {inner.tasks[current].syscall_times[SYSCALL_TASK_INFO]+=1;drop(inner);sys_task_info(args[0] as *mut TaskInfo)},
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
-    }
+    }           
 }

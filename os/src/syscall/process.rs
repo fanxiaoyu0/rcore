@@ -1,7 +1,7 @@
 //! Process management syscalls
 
 use crate::config::MAX_SYSCALL_NUM;
-use crate::task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus};
+use crate::task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,TASK_MANAGER};
 use crate::timer::get_time_us;
 use crate::mm::address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
 use crate::task::current_user_token;
@@ -65,5 +65,20 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
-    -1
+    let s=VirtAddr::from(ti as usize);
+    let pt=PageTable::from_token(current_user_token());
+    let ppn=pt.translate(s.floor()).unwrap().ppn().0;
+    let t=ppn<<12|s.page_offset();
+    // Change the status of current `Running` task into `Exited`.
+    let inner = TASK_MANAGER.inner.exclusive_access();
+    let current = inner.current_task;
+    unsafe{
+        *(t as *mut TaskInfo)=TaskInfo{
+            status:inner.tasks[current].task_status,
+            syscall_times: inner.tasks[current].syscall_times,
+            time: get_time_us()/1_000-inner.tasks[current].start_time/1_000,
+        };
+    }
+    drop(inner);
+    0
 }
