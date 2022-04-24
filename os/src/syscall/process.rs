@@ -7,6 +7,7 @@ use crate::mm::address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
 use crate::task::current_user_token;
 use crate::mm::page_table::{PTEFlags, PageTable};
 use crate::mm::frame_alloc;
+use crate::config::{PAGE_SIZE, PAGE_SIZE_BITS};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -38,7 +39,10 @@ pub fn sys_yield() -> isize {
 pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
     let _us = get_time_us();
     let virtual_address=VirtAddr::from(_ts as usize);
-    let page_table=PageTable::from_token(current_user_token());
+    // println!("time");
+    let token=current_user_token();
+    // println!("time2");
+    let page_table=PageTable::from_token(token);
     let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
     let physical_address=ppn<<12|virtual_address.page_offset();
     unsafe {
@@ -47,6 +51,9 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
             usec: _us % 1_000_000,
         };
     }
+    // drop(token);
+    // drop(ppn);
+    // drop(page_table);
     0
 }
 
@@ -57,6 +64,7 @@ pub fn sys_set_priority(_prio: isize) -> isize {
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
+    // println!("1");
     if _start&0xfff!=0{
         return -1;
     }
@@ -66,73 +74,41 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     if _port & 0x7 == 0 {
         return -1;
     }
-    let ppn=frame_alloc().unwrap().ppn;
-    // let pte_flags = ;
-    let mut t=_len/4096;
-    for i in 1..(t.floor()){
-        page_table.map(vpn, ppn, pte_flags);
+    // println!("1.2");
+    // [start, start + len) 中存在已经被映射的页
+    let t=current_user_token();
+    // println!("1.3");
+    let page_table=PageTable::from_token(t);
+    // println!("1.5");
+    let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
+    for i in 0..pages{
+        let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
+        if !page_table.translate(vpn).is_none(){
+            return -1;
+        }
     }
-    
-    // let frame = frame_alloc().unwrap();
-// 11        PageTable {
-// 12            root_ppn: frame.ppn,
-// 13            frames: vec![frame],
-// 14        }
-    
-    // fn frame_dealloc(ppn: PhysPageNum) {
-        // FRAME_ALLOCATOR.exclusive_access().dealloc(ppn);
-    // }
-        // [start, start + len) 中存在已经被映射的页
-// 
-// 物理内存不足
-    //     5        let ppn: PhysPageNum;
-//     6        match self.map_type {
-//     7            MapType::Identical => {
-//     8                ppn = PhysPageNum(vpn.0);
-//     9            }
-//    10            MapType::Framed => {
-//    11                let frame = frame_alloc().unwrap();
-//    12                ppn = frame.ppn;
-//    13                self.data_frames.insert(vpn, frame);
-//    14            }
-//    15        }
-//    16        
-// pub fn map(&mut self, vpn: VirtPageNum, ppn: PhysPageNum, flags: PTEFlags) {
-//     let pte = self.find_pte_create(vpn).unwrap();
-//     assert!(!pte.is_valid(), "vpn {:?} is mapped before mapping", vpn);
-//     *pte = PageTableEntry::new(ppn, flags | PTEFlags::V);
-// }
-// pub fn unmap(&mut self, vpn: VirtPageNum) {
-//     let pte = self.find_pte_create(vpn).unwrap();
-//     assert!(pte.is_valid(), "vpn {:?} is invalid before unmapping", vpn);
-//     *pte = PageTableEntry::empty();
-// }
-
-// pub fn map_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
-//     5        let ppn: PhysPageNum;
-//     6        match self.map_type {
-//     7            MapType::Identical => {
-//     8                ppn = PhysPageNum(vpn.0);
-//     9            }
-//    10            MapType::Framed => {
-//    11                let frame = frame_alloc().unwrap();
-//    12                ppn = frame.ppn;
-//    13                self.data_frames.insert(vpn, frame);
-//    14            }
-//    15        }
-//    16        let pte_flags = PTEFlags::from_bits(self.map_perm.bits).unwrap();
-//    17        page_table.map(vpn, ppn, pte_flags);
-//    18    }
-//    19    pub fn unmap_one(&mut self, page_table: &mut PageTable, vpn: VirtPageNum) {
-//    20        match self.map_type {
-//    21            MapType::Framed => {
-//    22                self.data_frames.remove(&vpn);
-//    23            }
-//    24            _ => {}
-//    25        }
-//    26        page_table.unmap(vpn);
-//    27    }
-
+    // println!("2");
+    for i in 0..pages{
+        // 物理内存不足, 注意因为这种情况造成的分配失败，没有回收已经分配过的内存
+        let temp=frame_alloc();
+        if temp.is_none(){
+            return -1;
+        }
+        let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
+        let ppn=temp.unwrap().ppn;
+        let mut flags=PTEFlags::U|PTEFlags::V;
+        if _port&0x1==1{
+            flags=flags|PTEFlags::R;
+        }
+        if _port&0x2==1{
+            flags=flags|PTEFlags::W;
+        }
+        if _port&0x4==1{
+            flags=flags|PTEFlags::X;
+        }
+        // page_table.map(vpn,ppn,flags);
+    }
+    drop(page_table);
     0
 }
 
@@ -143,7 +119,10 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     let virtual_address=VirtAddr::from(ti as usize);
-    let page_table=PageTable::from_token(current_user_token());
+    // println!("info1");
+    let token=current_user_token();
+    // println!("info2");
+    let page_table=PageTable::from_token(token);
     let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
     let physical_address=ppn<<12|virtual_address.page_offset();
     // Change the status of current `Running` task into `Exited`.
@@ -155,7 +134,11 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
             syscall_times: inner.tasks[current].syscall_times,
             time: get_time_us()/1_000-inner.tasks[current].start_time/1_000,
         };
+        drop(inner);
     }
-    drop(inner);
+    
+    drop(token);
+    drop(ppn);
+    drop(page_table);
     0
 }

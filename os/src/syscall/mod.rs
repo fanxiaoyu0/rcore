@@ -36,9 +36,9 @@ pub fn syscall(syscall_id: usize, args: [usize; 3]) -> isize {
         SYSCALL_EXIT => {inner.tasks[current].syscall_times[SYSCALL_EXIT]+=1;drop(inner);sys_exit(args[0] as i32)},
         SYSCALL_YIELD => {inner.tasks[current].syscall_times[SYSCALL_YIELD]+=1;drop(inner);sys_yield()},
         SYSCALL_GET_TIME => {inner.tasks[current].syscall_times[SYSCALL_GET_TIME]+=1;drop(inner);sys_get_time(args[0] as *mut TimeVal, args[1])},
-        SYSCALL_MMAP => sys_mmap(args[0], args[1], args[2]),
-        SYSCALL_MUNMAP => sys_munmap(args[0], args[1]),
-        SYSCALL_SET_PRIORITY => sys_set_priority(args[0] as isize),
+        SYSCALL_MMAP => {inner.tasks[current].syscall_times[SYSCALL_MMAP]+=1;drop(inner);sys_mmap(args[0], args[1], args[2])},
+        SYSCALL_MUNMAP => {inner.tasks[current].syscall_times[SYSCALL_MUNMAP]+=1;drop(inner);sys_munmap(args[0], args[1])},
+        SYSCALL_SET_PRIORITY => {inner.tasks[current].syscall_times[SYSCALL_SET_PRIORITY]+=1;drop(inner);sys_set_priority(args[0] as isize)},
         SYSCALL_TASK_INFO => {inner.tasks[current].syscall_times[SYSCALL_TASK_INFO]+=1;drop(inner);sys_task_info(args[0] as *mut TaskInfo)},
         _ => panic!("Unsupported syscall_id: {}", syscall_id),
     }           
