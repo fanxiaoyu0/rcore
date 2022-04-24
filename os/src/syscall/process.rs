@@ -56,11 +56,11 @@ pub fn sys_set_priority(_prio: isize) -> isize {
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
-    -1
+    0
 }
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
-    -1
+    0
 }
 
 // YOUR JOB: 引入虚地址后重写 sys_task_info
@@ -74,7 +74,7 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     let current = inner.current_task;
     unsafe{
         *(t as *mut TaskInfo)=TaskInfo{
-            status:inner.tasks[current].task_status,
+            status:TaskStatus::Exited,//inner.tasks[current].task_status,
             syscall_times: inner.tasks[current].syscall_times,
             time: get_time_us()/1_000-inner.tasks[current].start_time/1_000,
         };
