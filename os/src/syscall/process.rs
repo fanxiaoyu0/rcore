@@ -3,6 +3,9 @@
 use crate::config::MAX_SYSCALL_NUM;
 use crate::task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus};
 use crate::timer::get_time_us;
+use crate::mm::address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
+use crate::task::current_user_token;
+use crate::mm::page_table::{PTEFlags, PageTable};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -33,9 +36,12 @@ pub fn sys_yield() -> isize {
 // YOUR JOB: 引入虚地址后重写 sys_get_time
 pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
     let _us = get_time_us();
-    // println!("{}",_us);
+    let s=VirtAddr::from(_ts as usize);
+    let pt=PageTable::from_token(current_user_token());
+    let ppn=pt.translate(s.floor()).unwrap().ppn().0;
+    let t=ppn<<12|s.page_offset();
     unsafe {
-        *_ts = TimeVal {
+        *(t as *mut TimeVal) = TimeVal {
             sec: _us / 1_000_000,
             usec: _us % 1_000_000,
         };
