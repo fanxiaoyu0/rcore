@@ -72,9 +72,15 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        if !page_table.translate(vpn).is_none(){
-            return -1;
+        let temp=page_table.find_pte(vpn);
+        if !temp.is_none(){
+            if temp.unwrap().is_valid(){
+                return -1;
+            }
         }
+        // if (!temp.is_none())&&{
+            // return -1;
+        // }
     }
     // println!("pages:{}",pages);
     for i in 0..pages{
@@ -103,12 +109,40 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
             flags=flags|PTEFlags::X;
         }
         // println!("flags:{:?}",flags);
+        // println!("vpn:{:?}",vpn);
+        // println!("ppn:{:?}",ppn);
         page_table.map(vpn,ppn,flags);
     }
     0
 }
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
+    if _start&0xfff!=0{
+        // println!("start");
+        return -1;
+    }
+    let mut page_table=PageTable::from_token(current_user_token());
+    let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
+    // println!("pages:{}",pages);
+    for i in 0..pages{
+        let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
+        let temp=page_table.find_pte(vpn);
+        if temp.is_none(){
+            // println!("none");
+            return -1;
+        }
+        // println!("{}",temp.unwrap().ppn().0);
+        // println!("VPN:{:?}",vpn);
+        if !(temp.unwrap().is_valid()){
+            // println!("invalid");
+            return -1;
+        }
+    }
+    // println!("pages:{}",pages);
+    for i in 0..pages{
+        let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
+        page_table.unmap(vpn);
+    }
     0
 }
 
