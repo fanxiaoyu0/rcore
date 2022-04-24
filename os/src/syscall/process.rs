@@ -39,10 +39,7 @@ pub fn sys_yield() -> isize {
 pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
     let _us = get_time_us();
     let virtual_address=VirtAddr::from(_ts as usize);
-    // println!("time");
-    let token=current_user_token();
-    // println!("time2");
-    let page_table=PageTable::from_token(token);
+    let page_table=PageTable::from_token(current_user_token());
     let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
     let physical_address=ppn<<12|virtual_address.page_offset();
     unsafe {
@@ -51,9 +48,6 @@ pub fn sys_get_time(_ts: *mut TimeVal, _tz: usize) -> isize {
             usec: _us % 1_000_000,
         };
     }
-    // drop(token);
-    // drop(ppn);
-    // drop(page_table);
     0
 }
 
@@ -78,7 +72,7 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     // [start, start + len) 中存在已经被映射的页
     let t=current_user_token();
     // println!("1.3");
-    let page_table=PageTable::from_token(t);
+    let mut page_table=PageTable::from_token(t);
     // println!("1.5");
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
     for i in 0..pages{
@@ -106,7 +100,7 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
         if _port&0x4==1{
             flags=flags|PTEFlags::X;
         }
-        // page_table.map(vpn,ppn,flags);
+        page_table.map(vpn,ppn,flags);
     }
     drop(page_table);
     0
@@ -119,26 +113,18 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
 // YOUR JOB: 引入虚地址后重写 sys_task_info
 pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
     let virtual_address=VirtAddr::from(ti as usize);
-    // println!("info1");
-    let token=current_user_token();
-    // println!("info2");
-    let page_table=PageTable::from_token(token);
+    let page_table=PageTable::from_token(current_user_token());
     let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
     let physical_address=ppn<<12|virtual_address.page_offset();
-    // Change the status of current `Running` task into `Exited`.
     let inner = TASK_MANAGER.inner.exclusive_access();
     let current = inner.current_task;
     unsafe{
         *(physical_address as *mut TaskInfo)=TaskInfo{
+            // Change the status of current `Running` task into `Exited`.
             status:TaskStatus::Exited,
             syscall_times: inner.tasks[current].syscall_times,
             time: get_time_us()/1_000-inner.tasks[current].start_time/1_000,
         };
-        drop(inner);
     }
-    
-    drop(token);
-    drop(ppn);
-    drop(page_table);
     0
 }
