@@ -72,9 +72,9 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        let temp=page_table.find_pte(vpn);
-        if !temp.is_none(){
-            if temp.unwrap().is_valid(){
+        let temp1=page_table.translate(vpn);
+        if !temp1.is_none(){
+            if temp1.unwrap().is_valid(){
                 return -1;
             }
         }
@@ -86,6 +86,13 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     for i in 0..pages{
         // 物理内存不足, 注意因为这种情况造成的分配失败，没有回收已经分配过的内存
         let temp=frame_alloc();
+        // println!("=======================");
+        // println!("{:?}",frame_alloc().unwrap().ppn.0);
+        // println!("{:?}",frame_alloc().unwrap().ppn.0);
+        // println!("{:?}",frame_alloc().unwrap().ppn);
+        // println!("{:?}",frame_alloc().unwrap().ppn);
+        // println!("{:?}",frame_alloc().unwrap().ppn);
+        // println!("============================");
         if temp.is_none(){
             return -1;
         }
@@ -108,9 +115,9 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
         if _port&0x4==0x4{
             flags=flags|PTEFlags::X;
         }
-        // println!("flags:{:?}",flags);
-        // println!("vpn:{:?}",vpn);
-        // println!("ppn:{:?}",ppn);
+        // println!(":{:?}",flags);
+        // println!(":{:?}",vpn);
+        // println!(":{:?}",ppn);
         page_table.map(vpn,ppn,flags);
     }
     0
@@ -126,12 +133,17 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     // println!("pages:{}",pages);
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        let temp=page_table.find_pte(vpn);
+        // println!("{:?}",vpn);
+        let temp=page_table.translate(vpn);
+        // println!("{:?}",temp.unwrap().ppn());
+        // println!("{:?}",temp.unwrap().flags());
         if temp.is_none(){
             // println!("none");
             return -1;
         }
-        // println!("{}",temp.unwrap().ppn().0);
+        // println!("{:?}",temp.unwrap().ppn());
+        // println!("{:?}",temp.unwrap().flags());
+        // println!
         // println!("VPN:{:?}",vpn);
         if !(temp.unwrap().is_valid()){
             // println!("invalid");

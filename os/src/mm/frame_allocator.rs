@@ -64,13 +64,21 @@ impl FrameAllocator for StackFrameAllocator {
         }
     }
     fn alloc(&mut self) -> Option<PhysPageNum> {
-        if let Some(ppn) = self.recycled.pop() {
-            Some(ppn.into())
-        } else if self.current == self.end {
+        // println!("==-------------------------------------");
+        // println!("{:?}",self.recycled);
+        // if let Some(ppn) = self.recycled.pop() {
+        //     println!("{:?}",self.recycled);
+        //     let t=Some(ppn.into());
+        //     println!("{:?}",self.recycled);
+        //     t
+        // } else 
+        if self.current == self.end {
             None
         } else {
+            let a=Some((self.current).into());
             self.current += 1;
-            Some((self.current - 1).into())
+            // println!("a:{:?}",a);
+            a
         }
     }
     fn dealloc(&mut self, ppn: PhysPageNum) {
