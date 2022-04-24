@@ -68,12 +68,7 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     if _port & 0x7 == 0 {
         return -1;
     }
-    // println!("1.2");
-    // [start, start + len) 中存在已经被映射的页
-    let t=current_user_token();
-    // println!("1.3");
-    let mut page_table=PageTable::from_token(t);
-    // println!("1.5");
+    let mut page_table=PageTable::from_token(current_user_token());
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
@@ -81,7 +76,7 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
             return -1;
         }
     }
-    // println!("2");
+    // println!("pages:{}",pages);
     for i in 0..pages{
         // 物理内存不足, 注意因为这种情况造成的分配失败，没有回收已经分配过的内存
         let temp=frame_alloc();
@@ -89,20 +84,27 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
             return -1;
         }
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
+        // println!("vpn:{:?}",vpn);
         let ppn=temp.unwrap().ppn;
-        let mut flags=PTEFlags::U|PTEFlags::V;
-        if _port&0x1==1{
+        // println!("ppn:{:?}",ppn);
+        let mut flags=PTEFlags::U;
+        // println!("_port:{}",_port);
+        if _port&0x1==0x1{
             flags=flags|PTEFlags::R;
         }
-        if _port&0x2==1{
+        // println!("_port:{}",_port);
+        // println!("3&2:{}",0x3&0x2);
+        if _port&0x2==0x2{
             flags=flags|PTEFlags::W;
+            // println!("Write");
+            // println!("flags:{:?}",flags);
         }
-        if _port&0x4==1{
+        if _port&0x4==0x4{
             flags=flags|PTEFlags::X;
         }
+        // println!("flags:{:?}",flags);
         page_table.map(vpn,ppn,flags);
     }
-    drop(page_table);
     0
 }
 
