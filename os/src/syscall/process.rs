@@ -65,9 +65,9 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE; // pages=ceil(_len/PAGE_SIZE)
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        let temp1=page_table.translate(vpn);
-        if !temp1.is_none(){
-            if temp1.unwrap().is_valid(){
+        let page_table_entry=page_table.translate(vpn);
+        if !page_table_entry.is_none(){
+            if page_table_entry.unwrap().is_valid(){
                 return -1;
             }
         }
@@ -97,11 +97,11 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
     for i in 0..pages {
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        let virtual_page=page_table.translate(vpn);
-        if virtual_page.is_none(){
+        let page_table_entry=page_table.translate(vpn);
+        if page_table_entry.is_none(){
             return -1;
         }
-        if !(virtual_page.unwrap().is_valid()){
+        if !(page_table_entry.unwrap().is_valid()){
             return -1;
         }
     }
