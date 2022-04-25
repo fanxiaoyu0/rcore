@@ -64,8 +64,7 @@ impl FrameAllocator for StackFrameAllocator {
         }
     }
     fn alloc(&mut self) -> Option<PhysPageNum> {
-        // println!("==-------------------------------------");
-        // println!("{:?}",self.recycled);
+        // ? why recycled's size increase without doing anything
         // if let Some(ppn) = self.recycled.pop() {
         //     println!("{:?}",self.recycled);
         //     let t=Some(ppn.into());
@@ -77,7 +76,6 @@ impl FrameAllocator for StackFrameAllocator {
         } else {
             let a=Some((self.current).into());
             self.current += 1;
-            // println!("a:{:?}",a);
             a
         }
     }

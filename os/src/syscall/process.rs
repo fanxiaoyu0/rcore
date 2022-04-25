@@ -3,11 +3,11 @@
 use crate::config::MAX_SYSCALL_NUM;
 use crate::task::{exit_current_and_run_next, suspend_current_and_run_next, TaskStatus,TASK_MANAGER};
 use crate::timer::get_time_us;
-use crate::mm::address::{PhysAddr, PhysPageNum, VirtAddr, VirtPageNum};
+use crate::mm::address::{VirtAddr};
 use crate::task::current_user_token;
 use crate::mm::page_table::{PTEFlags, PageTable};
 use crate::mm::frame_alloc;
-use crate::config::{PAGE_SIZE, PAGE_SIZE_BITS};
+use crate::config::{PAGE_SIZE};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -58,18 +58,11 @@ pub fn sys_set_priority(_prio: isize) -> isize {
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
 pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
-    // println!("1");
-    if _start&0xfff!=0{
-        return -1;
-    }
-    if _port & !0x7 != 0 {
-        return -1;
-    }
-    if _port & 0x7 == 0 {
-        return -1;
-    }
+    if _start&0xfff!=0 { return -1; }
+    if _port&!0x7!=0 { return -1; }
+    if _port&0x7==0 { return -1; }
     let mut page_table=PageTable::from_token(current_user_token());
-    let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
+    let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE; // pages=ceil(_len/PAGE_SIZE)
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
         let temp1=page_table.translate(vpn);
@@ -78,46 +71,19 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
                 return -1;
             }
         }
-        // if (!temp.is_none())&&{
-            // return -1;
-        // }
     }
-    // println!("pages:{}",pages);
     for i in 0..pages{
         // 物理内存不足, 注意因为这种情况造成的分配失败，没有回收已经分配过的内存
-        let temp=frame_alloc();
-        // println!("=======================");
-        // println!("{:?}",frame_alloc().unwrap().ppn.0);
-        // println!("{:?}",frame_alloc().unwrap().ppn.0);
-        // println!("{:?}",frame_alloc().unwrap().ppn);
-        // println!("{:?}",frame_alloc().unwrap().ppn);
-        // println!("{:?}",frame_alloc().unwrap().ppn);
-        // println!("============================");
-        if temp.is_none(){
+        let new_physical_page=frame_alloc();
+        if new_physical_page.is_none(){
             return -1;
         }
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        // println!("vpn:{:?}",vpn);
-        let ppn=temp.unwrap().ppn;
-        // println!("ppn:{:?}",ppn);
+        let ppn=new_physical_page.unwrap().ppn;
         let mut flags=PTEFlags::U;
-        // println!("_port:{}",_port);
-        if _port&0x1==0x1{
-            flags=flags|PTEFlags::R;
-        }
-        // println!("_port:{}",_port);
-        // println!("3&2:{}",0x3&0x2);
-        if _port&0x2==0x2{
-            flags=flags|PTEFlags::W;
-            // println!("Write");
-            // println!("flags:{:?}",flags);
-        }
-        if _port&0x4==0x4{
-            flags=flags|PTEFlags::X;
-        }
-        // println!(":{:?}",flags);
-        // println!(":{:?}",vpn);
-        // println!(":{:?}",ppn);
+        if _port&0x1==0x1 { flags=flags|PTEFlags::R; }
+        if _port&0x2==0x2 { flags=flags|PTEFlags::W; }
+        if _port&0x4==0x4 { flags=flags|PTEFlags::X; }
         page_table.map(vpn,ppn,flags);
     }
     0
@@ -125,32 +91,20 @@ pub fn sys_mmap(_start: usize, _len: usize, _port: usize) -> isize {
 
 pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     if _start&0xfff!=0{
-        // println!("start");
         return -1;
     }
     let mut page_table=PageTable::from_token(current_user_token());
     let pages=(_len+PAGE_SIZE-1)/PAGE_SIZE;
-    // println!("pages:{}",pages);
-    for i in 0..pages{
+    for i in 0..pages {
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
-        // println!("{:?}",vpn);
-        let temp=page_table.translate(vpn);
-        // println!("{:?}",temp.unwrap().ppn());
-        // println!("{:?}",temp.unwrap().flags());
-        if temp.is_none(){
-            // println!("none");
+        let virtual_page=page_table.translate(vpn);
+        if virtual_page.is_none(){
             return -1;
         }
-        // println!("{:?}",temp.unwrap().ppn());
-        // println!("{:?}",temp.unwrap().flags());
-        // println!
-        // println!("VPN:{:?}",vpn);
-        if !(temp.unwrap().is_valid()){
-            // println!("invalid");
+        if !(virtual_page.unwrap().is_valid()){
             return -1;
         }
     }
-    // println!("pages:{}",pages);
     for i in 0..pages{
         let vpn=VirtAddr::from(_start+i*PAGE_SIZE).floor();
         page_table.unmap(vpn);
