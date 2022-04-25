@@ -202,9 +202,9 @@
     <span class="kw">let</span> <span class="ident">pages</span><span class="op">=</span>(<span class="ident">_len</span><span class="op">+</span><span class="ident">PAGE_SIZE</span><span class="op">-</span><span class="number">1</span>)<span class="op">/</span><span class="ident">PAGE_SIZE</span>; <span class="comment">// pages=ceil(_len/PAGE_SIZE)</span>
     <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">pages</span>{
         <span class="kw">let</span> <span class="ident">vpn</span><span class="op">=</span><span class="ident">VirtAddr::from</span>(<span class="ident">_start</span><span class="op">+</span><span class="ident">i</span><span class="kw-2">*</span><span class="ident">PAGE_SIZE</span>).<span class="ident">floor</span>();
-        <span class="kw">let</span> <span class="ident">temp1</span><span class="op">=</span><span class="ident">page_table</span>.<span class="ident">translate</span>(<span class="ident">vpn</span>);
-        <span class="kw">if</span> <span class="op">!</span><span class="ident">temp1</span>.<span class="ident">is_none</span>(){
-            <span class="kw">if</span> <span class="ident">temp1</span>.<span class="ident">unwrap</span>().<span class="ident">is_valid</span>(){
+        <span class="kw">let</span> <span class="ident">page_table_entry</span><span class="op">=</span><span class="ident">page_table</span>.<span class="ident">translate</span>(<span class="ident">vpn</span>);
+        <span class="kw">if</span> <span class="op">!</span><span class="ident">page_table_entry</span>.<span class="ident">is_none</span>(){
+            <span class="kw">if</span> <span class="ident">page_table_entry</span>.<span class="ident">unwrap</span>().<span class="ident">is_valid</span>(){
                 <span class="kw">return</span> <span class="op">-</span><span class="number">1</span>;
             }
         }
@@ -234,11 +234,11 @@
     <span class="kw">let</span> <span class="ident">pages</span><span class="op">=</span>(<span class="ident">_len</span><span class="op">+</span><span class="ident">PAGE_SIZE</span><span class="op">-</span><span class="number">1</span>)<span class="op">/</span><span class="ident">PAGE_SIZE</span>;
     <span class="kw">for</span> <span class="ident">i</span> <span class="kw">in</span> <span class="number">0</span>..<span class="ident">pages</span> {
         <span class="kw">let</span> <span class="ident">vpn</span><span class="op">=</span><span class="ident">VirtAddr::from</span>(<span class="ident">_start</span><span class="op">+</span><span class="ident">i</span><span class="kw-2">*</span><span class="ident">PAGE_SIZE</span>).<span class="ident">floor</span>();
-        <span class="kw">let</span> <span class="ident">virtual_page</span><span class="op">=</span><span class="ident">page_table</span>.<span class="ident">translate</span>(<span class="ident">vpn</span>);
-        <span class="kw">if</span> <span class="ident">virtual_page</span>.<span class="ident">is_none</span>(){
+        <span class="kw">let</span> <span class="ident">page_table_entry</span><span class="op">=</span><span class="ident">page_table</span>.<span class="ident">translate</span>(<span class="ident">vpn</span>);
+        <span class="kw">if</span> <span class="ident">page_table_entry</span>.<span class="ident">is_none</span>(){
             <span class="kw">return</span> <span class="op">-</span><span class="number">1</span>;
         }
-        <span class="kw">if</span> <span class="op">!</span>(<span class="ident">virtual_page</span>.<span class="ident">unwrap</span>().<span class="ident">is_valid</span>()){
+        <span class="kw">if</span> <span class="op">!</span>(<span class="ident">page_table_entry</span>.<span class="ident">unwrap</span>().<span class="ident">is_valid</span>()){
             <span class="kw">return</span> <span class="op">-</span><span class="number">1</span>;
         }
     }
