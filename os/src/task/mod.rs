@@ -10,7 +10,7 @@
 //! might not be what you expect.
 
 mod context;
-mod manager;
+pub mod manager;
 mod pid;
 mod processor;
 mod switch;
