@@ -12,7 +12,7 @@ use alloc::sync::Arc;
 use crate::config::MAX_SYSCALL_NUM;
 use crate::mm::address::{VirtAddr};
 use crate::mm::page_table::{PTEFlags, PageTable};
-use crate::config::{PAGE_SIZE};
+use crate::config::{PAGE_SIZE,BIG_STRIDE};
 
 #[repr(C)]
 #[derive(Debug)]
@@ -154,6 +154,7 @@ pub fn sys_set_priority(_prio: isize) -> isize {
     let mut inner = task.inner_exclusive_access();
     if _prio >= 2 {
         inner.priority = _prio as usize;
+        inner.pass=BIG_STRIDE/inner.priority;
         drop(inner);
         return _prio;
     } else {
