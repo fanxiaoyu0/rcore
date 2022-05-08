@@ -96,7 +96,7 @@ pub fn sys_waitpid(pid: isize, exit_code_ptr: *mut i32) -> isize {
     if let Some((idx, _)) = pair {
         let child = inner.children.remove(idx);
         // confirm that child will be deallocated after removing from children list
-        assert_eq!(Arc::strong_count(&child), 1);
+        assert_eq!(Arc::strong_count(&child), 2);
         let found_pid = child.getpid();
         // ++++ temporarily access child TCB exclusively
         let exit_code = child.inner_exclusive_access().exit_code;
@@ -141,6 +141,7 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
             time: get_time_us()/1_000-inner.start_time/1_000,
         };
     }
+    drop(inner);
     0
 }
 
