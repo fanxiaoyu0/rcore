@@ -49,6 +49,8 @@ pub struct TaskControlBlockInner {
     pub exit_code: i32,
     pub start_time:usize,
     pub syscall_times:[u32; MAX_SYSCALL_NUM],
+    pub stride:usize,
+    pub priority:usize,
 }
 
 /// Simple access to its internal fields
@@ -108,6 +110,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     start_time:0,
                     syscall_times:[0; MAX_SYSCALL_NUM],
+                    stride:0,
+                    priority:0,
                 })
             },
         };
@@ -177,6 +181,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     start_time:0,
                     syscall_times:[0; MAX_SYSCALL_NUM],
+                    stride:0,
+                    priority:0,
                 })
             },
         });
@@ -221,6 +227,8 @@ impl TaskControlBlock {
                     exit_code: 0,
                     start_time:0,
                     syscall_times:[0; MAX_SYSCALL_NUM],
+                    stride:0,
+                    priority:0,
                 })
             },
         });

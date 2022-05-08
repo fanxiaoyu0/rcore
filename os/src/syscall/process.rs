@@ -146,7 +146,19 @@ pub fn sys_task_info(ti: *mut TaskInfo) -> isize {
 
 // YOUR JOB: 实现sys_set_priority，为任务添加优先级
 pub fn sys_set_priority(_prio: isize) -> isize {
-    -1
+    // syscall ID：140
+    // 设置当前进程优先级为 prio
+    // 参数：prio 进程优先级，要求 prio >= 2
+    // 返回值：如果输入合法则返回 prio，否则返回 -1
+    let task = current_task().unwrap();
+    let mut inner = task.inner_exclusive_access();
+    if _prio >= 2 {
+        inner.priority = _prio as usize;
+        drop(inner);
+        return _prio;
+    } else {
+        return -1;
+    }
 }
 
 // YOUR JOB: 扩展内核以实现 sys_mmap 和 sys_munmap
@@ -205,7 +217,6 @@ pub fn sys_munmap(_start: usize, _len: usize) -> isize {
     0
 }
 
-//
 // YOUR JOB: 实现 sys_spawn 系统调用
 // ALERT: 注意在实现 SPAWN 时不需要复制父进程地址空间，SPAWN != FORK + EXEC 
 pub fn sys_spawn(_path: *const u8) -> isize {
@@ -216,68 +227,10 @@ pub fn sys_spawn(_path: *const u8) -> isize {
         let new_task=task.spawn(data);
         let new_pid = new_task.pid.0;
         let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
-        // we do not have to move to next instruction since we have done it before
-        // for child process, fork returns 0
         trap_cx.x[10] = 0;
         add_task(new_task);
-        new_pid as isize
+        return new_pid as isize;
     } else {
-        -1
+        return -1;
     }
-
-
-    // let current_task = current_task().unwrap();
-    // let new_task = current_task.spawn(_path);
-    // let new_pid = new_task.pid.0;
-    // // modify trap context of new_task, because it returns immediately after switching
-    // let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
-    // // we do not have to move to next instruction since we have done it before
-    // // for child process, fork returns 0
-    // trap_cx.x[10] = 0;
-    // // add new task to scheduler
-    // add_task(new_task);
-    // new_pid as isize
-
-    // let current_task = current_task().unwrap();
-    // let new_task = current_task.fork();
-    // let new_pid = new_task.pid.0;
-    // // modify trap context of new_task, because it returns immediately after switching
-    // let trap_cx = new_task.inner_exclusive_access().get_trap_cx();
-    // // we do not have to move to next instruction since we have done it before
-    // // for child process, fork returns 0
-    // trap_cx.x[10] = 0;
-    // // add new task to scheduler
-    // add_task(new_task);
-    // // new_pid as isize
-
-    // let token = current_user_token();
-    // let path = translated_str(token, _path);
-    // if let Some(data) = get_app_data_by_name(path.as_str()) {
-    //     // let task = current_task().unwrap();
-    //     current_task.exec(data);
-    //     return new_pid as isize;
-    // } else {
-    //     return -1;
-    // }
-    // -1
-    // println!("Here????");
-    // let mut b=-1;
-    // // let a=;
-    
-    // if  sys_fork()== 0 {
-    //     println!("fork success");
-    //     b=sys_exec(_path);
-    //     // return b;
-    // }
-    // else{
-    //     return b;
-    //     // return a;
-    // }
-    // // let a=sys_fork();
-    // // let b=sys_exec(_path);
-    // // if b==-1{
-    // //     return -1;
-    // // }
-    // // a
-    // -1
 }
