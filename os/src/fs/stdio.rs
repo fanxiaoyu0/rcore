@@ -2,6 +2,7 @@ use super::File;
 use crate::mm::{UserBuffer};
 use crate::sbi::console_getchar;
 use crate::task::suspend_current_and_run_next;
+use super::*;
 
 /// The standard input
 pub struct Stdin;
@@ -31,6 +32,12 @@ impl File for Stdin {
     fn write(&self, _user_buf: UserBuffer) -> usize {
         panic!("Cannot write to stdin!");
     }
+    // fn fill_in_state(&self, buf: *mut Stat) {
+    //     panic!("Get state failed in stdin!");
+    // }
+    fn get_my_state(&self, buf: *mut Stat) {
+        panic!("Get state failed in stdin!");
+    }
 }
 
 impl File for Stdout {
@@ -44,5 +51,11 @@ impl File for Stdout {
             print!("{}", core::str::from_utf8(*buffer).unwrap());
         }
         user_buf.len()
+    }
+    // fn fill_in_state(&self, buf: *mut Stat) {
+    //     panic!("Get state failed in stdin!");
+    // }
+    fn get_my_state(&self, buf: *mut Stat) {
+        panic!("Get state failed in stdin!");
     }
 }

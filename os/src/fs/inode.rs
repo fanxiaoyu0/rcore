@@ -10,6 +10,10 @@ use bitflags::*;
 use alloc::vec::Vec;
 use super::File;
 use crate::mm::UserBuffer;
+use super::*;
+use crate::mm::page_table::{PageTable};
+use crate::mm::address::{VirtAddr};
+use crate::task::current_user_token;
 
 /// A wrapper around a filesystem inode
 /// to implement File trait atop
@@ -139,6 +143,16 @@ pub fn open_file(name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
     }
 }
 
+pub fn my_linkat(last:&str,now:&str)->isize{
+    let result=ROOT_INODE.my_linkat(last,now);
+    return result;
+}
+
+pub fn my_unlinkat(name:&str)->isize{
+    let result=ROOT_INODE.my_unlinkat(name);
+    return result;
+}
+
 impl File for OSInode {
     fn readable(&self) -> bool { self.readable }
     fn writable(&self) -> bool { self.writable }
@@ -166,4 +180,45 @@ impl File for OSInode {
         }
         total_write_size
     }
-}
+    // fn fill_in_state(&self, buf:*mut Stat){
+    //     let virtual_address=VirtAddr::from(buf as usize);
+    //     let page_table=PageTable::from_token(current_user_token());
+    //     let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
+    //     let physical_address=ppn<<12|virtual_address.page_offset();
+    //     let mut inner=self.inner.exclusive_access();
+    //     unsafe {
+    //         let is_didectory=inner.inode.as_ref().get_inode_file_type();
+    //         let mut file_type=StatMode::FILE;
+    //         if is_didectory {
+    //             file_type=StatMode::DIR;
+    //         }
+    //         *(physical_address as *mut Stat)=Stat{
+    //             dev:0,
+    //             mode:file_type,
+    //             ino:inner.inode.as_ref().get_inode_id() as u64,
+    //             pad:[0u64;7],
+    //             nlink:ROOT_INODE.get_num_link((*(physical_address as *mut Stat)).ino as u32),
+    //         };
+    //     }
+    // }
+    fn get_my_state(&self,buf:*mut Stat){
+        let pt=PageTable::from_token(current_user_token());
+        let start=VirtAddr::from(buf as usize);
+        let ppn=pt.translate(start.floor()).unwrap().ppn().0;
+        let ptr=ppn<<12|start.page_offset() as usize;
+        let mut inner=self.inner.exclusive_access();
+        unsafe {
+            let flag=inner.inode.as_ref().judge_inode();
+            if  flag{
+                (*(ptr as *mut Stat)).mode =StatMode::DIR;
+            }
+            else {
+                (*(ptr as *mut Stat)).mode =StatMode::FILE;
+            }
+            (*(ptr as *mut Stat)).dev = 0;
+            (*(ptr as *mut Stat)).ino = inner.inode.as_ref().get_i_id() as u64;
+            (*(ptr as *mut Stat)).pad = [0u64; 7];
+            (*(ptr as *mut Stat)).nlink = ROOT_INODE.get_num_link((*(ptr as *mut Stat)).ino as u32);
+        }
+    }
+}   
