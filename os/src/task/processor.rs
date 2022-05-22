@@ -60,6 +60,7 @@ pub fn run_tasks() {
             if task_inner.start_time==0{
                 task_inner.start_time=get_time_us();
             }
+            task_inner.stride+=task_inner.pass;
             drop(task_inner);
             // release coming task TCB manually
             processor.current = Some(task);
