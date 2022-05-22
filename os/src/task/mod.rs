@@ -21,7 +21,7 @@ use alloc::sync::Arc;
 use lazy_static::*;
 use manager::fetch_task;
 use switch::__switch;
-use crate::mm::VirtAddr;
+use crate::mm::*;
 use crate::mm::MapPermission;
 use crate::config::PAGE_SIZE;
 use crate::timer::get_time_us;
@@ -87,6 +87,44 @@ pub fn exit_current_and_run_next(exit_code: i32) {
     // we do not have to save task context
     let mut _unused = TaskContext::zero_init();
     schedule(&mut _unused as *mut _);
+}
+pub fn update(syscall_id: usize) {
+    let current_task=current_task().unwrap();
+    let mut current_inner=current_task.inner_exclusive_access();
+    current_inner.syscall_times[syscall_id]+=1;
+}
+
+pub fn get_syscall_times()->[u32; 500]{
+    let current_task=current_task().unwrap();
+    let mut current_inner=current_task.inner_exclusive_access();
+    return current_inner.syscall_times;
+}
+
+pub fn get_begin_time()->usize{
+    let current_task=current_task().unwrap();
+    let mut current_inner=current_task.inner_exclusive_access();
+    return current_inner.start_time;
+}
+
+pub fn map(start:VirtPageNum,end:VirtPageNum,permission: MapPermission)->bool{
+    let current_task=current_task().unwrap();
+    let mut current_inner=current_task.inner_exclusive_access();
+    if current_inner.memory_set.map_or_not(start,end){
+        current_inner.memory_set.memory_map(start,end,permission);
+        return true
+    }
+    return false
+}
+
+pub fn unmap(start:VirtPageNum,end:VirtPageNum)->bool{
+    let current_task=current_task().unwrap();
+    let mut current_inner=current_task.inner_exclusive_access();
+    if current_inner.memory_set.unmap_or_not(start,end){
+        current_inner.memory_set.memory_unmap(start,end);
+        return true;
+    }
+    return false
+
 }
 
 lazy_static! {

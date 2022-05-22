@@ -75,6 +75,88 @@ impl MemorySet {
             self.areas.remove(idx);
         }
     }
+
+    pub fn memory_map(&mut self,start:VirtPageNum,end:VirtPageNum,permission:MapPermission){
+        let mut min=end.0;
+        let mut max=start.0;
+        for s in start.0..end.0{
+            let mut contain=false;
+            for i in 0..self.areas.len(){
+                let area=self.areas.get(i).unwrap();
+                if VirtPageNum::from(area.vpn_range.get_start().0).0<=s&&s<VirtPageNum::from(area.vpn_range.get_end().0).0{
+                    self.areas[i].map_one(&mut self.page_table, VirtPageNum::from(s));
+                    contain=true;
+                }
+            }
+            if !contain{
+                if s<min{
+                    min=s;
+                }
+                if s>max{
+                    max=s;
+                }
+            }
+        }
+        max+=1;
+        self.insert_framed_area(VirtAddr::from(min*4096), VirtAddr::from(max*4096), permission);
+    }
+
+
+    pub fn memory_unmap(&mut self,start:VirtPageNum,end:VirtPageNum){
+        for s in start.0..end.0{
+            for i in 0..self.areas.len(){
+                if self.areas[i].data_frames.contains_key(&VirtPageNum::from(s)){
+                    self.areas[i].unmap_one(&mut self.page_table, VirtPageNum::from(s));
+                }
+            }
+        }
+        let mut k=0;
+        while k<self.areas.len(){
+            if self.areas[k].data_frames.is_empty() {
+                self.areas.remove(k);
+                k-=1;
+            }
+            k+=1;
+        }
+    }
+
+    pub fn map_or_not(&mut self, start: VirtPageNum, end: VirtPageNum) -> bool {
+        for s in start.0..end.0{
+            let mut can_map=true;
+            for i in 0..self.areas.len(){
+                let mut area=self.areas.get(i).unwrap();
+                let mut contain=false;
+                if self.areas[i].data_frames.contains_key(&VirtPageNum::from(s)){
+                    contain=true;
+                }
+                if VirtPageNum::from(area.vpn_range.get_start().0).0<=s && s<VirtPageNum::from(area.vpn_range.get_end().0).0 && contain{
+                    can_map=false;
+                }
+            }
+            if !can_map{
+                return false;
+            }
+        }
+        return true;
+    }
+
+    pub fn unmap_or_not(&mut self, start: VirtPageNum, end: VirtPageNum) -> bool{
+        for s in start.0..end.0{
+            let mut can_unmap=false;
+            for i in 0..self.areas.len(){
+                let mut area=self.areas.get(i).unwrap();
+                if self.areas[i].data_frames.contains_key(&VirtPageNum::from(s)) {
+                    can_unmap=true;
+                }
+            }
+            if !can_unmap {
+                return false;
+            }
+        }
+        return true;
+    }
+
+
     fn push(&mut self, mut map_area: MapArea, data: Option<&[u8]>) {
         map_area.map(&mut self.page_table);
         if let Some(data) = data {

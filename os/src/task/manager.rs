@@ -28,17 +28,21 @@ impl TaskManager {
     }
     /// Take a process out of the ready queue
     pub fn fetch(&mut self) -> Option<Arc<TaskControlBlock>> {
-        let mut min_stride_task_index = 0;
-        let mut min_stride = self.ready_queue[0].inner_exclusive_access().stride;
+        let mut flag=0;
+        let mut max=10000000 as usize;
         for i in 0..self.ready_queue.len(){
-            let task = self.ready_queue[i].inner_exclusive_access();
-            if task.stride < min_stride {
-                min_stride = task.stride;
-                min_stride_task_index = i;
+            if self.ready_queue.get(i).unwrap().inner_exclusive_access().stride<=max{
+                flag=i;
+                max=self.ready_queue.get(i).unwrap().inner_exclusive_access().stride;
             }
         }
-        return self.ready_queue.swap_remove_front(min_stride_task_index);
+        let big_stride:isize=999999;
+        let prior=self.ready_queue.get(flag).unwrap().inner_exclusive_access().priority;
+        self.ready_queue.get(flag).unwrap().inner_exclusive_access().stride+=(big_stride/prior) as usize;
+        self.ready_queue.swap(0,flag);
+        self.ready_queue.pop_front()
     }
+
 }
 
 lazy_static! {

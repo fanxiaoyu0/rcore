@@ -9,7 +9,6 @@ pub trait File : Send + Sync {
     fn writable(&self) -> bool;
     fn read(&self, buf: UserBuffer) -> usize;
     fn write(&self, buf: UserBuffer) -> usize;
-    // fn fill_in_state(&self, buf: *mut Stat);
     fn get_my_state(&self, buf: *mut Stat);
 }
 
@@ -42,4 +41,4 @@ bitflags! {
 }    
 
 pub use stdio::{Stdin, Stdout};
-pub use inode::{OSInode, open_file, OpenFlags, list_apps};
+pub use inode::{OSInode, open_file, OpenFlags, list_apps,my_linkat,my_unlinkat};

@@ -1,9 +1,3 @@
-[source.crates-io]
-registry = "https://github.com/rust-lang/crates.io-index"
-replace-with = 'ustc'
-[source.ustc]
-registry = "git://mirrors.ustc.edu.cn/crates.io-index"
-
 [build]
 target = "riscv64gc-unknown-none-elf"
 

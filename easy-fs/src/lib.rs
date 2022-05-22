@@ -3,7 +3,7 @@
 extern crate alloc;
 
 mod block_dev;
-pub mod layout;
+mod layout;
 mod efs;
 mod bitmap;
 mod vfs;
