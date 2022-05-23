@@ -9,6 +9,7 @@ pub trait File : Send + Sync {
     fn writable(&self) -> bool;
     fn read(&self, buf: UserBuffer) -> usize;
     fn write(&self, buf: UserBuffer) -> usize;
+    // fn fill_in_state(&self, buf: *mut Stat);
     fn get_my_state(&self, buf: *mut Stat);
 }
 
