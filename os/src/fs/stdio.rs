@@ -32,7 +32,7 @@ impl File for Stdin {
     fn write(&self, _user_buf: UserBuffer) -> usize {
         panic!("Cannot write to stdin!");
     }
-    fn get_my_state(&self, buf: *mut Stat) {
+    fn get_file_state(&self, buf: *mut Stat) {
         panic!("Get state failed in stdin!");
     }
 }
@@ -49,7 +49,7 @@ impl File for Stdout {
         }
         user_buf.len()
     }
-    fn get_my_state(&self, buf: *mut Stat) {
+    fn get_file_state(&self, buf: *mut Stat) {
         panic!("Get state failed in stdout!");
     }
 }

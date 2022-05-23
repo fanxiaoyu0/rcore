@@ -343,10 +343,9 @@ impl Inode {
         return 0;
     }
 
-    pub fn judge_inode(&self)->bool{
-        let result=self.read_disk_inode(|disk_node| {
+    pub fn get_inode_type(&self)->bool {
+        return self.read_disk_inode(|disk_node| {
             return disk_node.type_ == DiskInodeType::Directory;
         });
-        return result;
     }
 }

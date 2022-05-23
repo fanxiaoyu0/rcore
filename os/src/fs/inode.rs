@@ -177,25 +177,25 @@ impl File for OSInode {
         }
         total_write_size
     }
-    fn get_my_state(&self,buf:*mut Stat){
-        let pt=PageTable::from_token(current_user_token());
-        let start=VirtAddr::from(buf as usize);
-        let ppn=pt.translate(start.floor()).unwrap().ppn().0;
-        let ptr=ppn<<12|start.page_offset() as usize;
+    fn get_file_state(&self, buf:*mut Stat){
+        let virtual_address=VirtAddr::from(buf as usize);
+        let page_table=PageTable::from_token(current_user_token());
+        let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
+        let physical_address=ppn<<12|virtual_address.page_offset();
         let mut inner=self.inner.exclusive_access();
         unsafe {
-            let flag=inner.inode.as_ref().judge_inode();
-            if  flag{
-                (*(ptr as *mut Stat)).mode =StatMode::DIR;
+            let mut file_type=StatMode::FILE;
+            if inner.inode.as_ref().get_inode_type() {
+                file_type=StatMode::DIR;
             }
-            else {
-                (*(ptr as *mut Stat)).mode =StatMode::FILE;
-            }
-            (*(ptr as *mut Stat)).dev = 0;
-            (*(ptr as *mut Stat)).ino = inner.inode.as_ref().get_i_id() as u64;
-            (*(ptr as *mut Stat)).pad = [0u64; 7];
-            (*(ptr as *mut Stat)).nlink = ROOT_INODE.get_num_link((*(ptr as *mut Stat)).ino as u32);
-
+            let ino = inner.inode.as_ref().get_i_id() as u32;
+            *(physical_address as *mut Stat)=Stat{
+                dev:0,
+                mode:file_type,
+                ino:inner.inode.as_ref().get_i_id() as u64,
+                pad:[0u64;7],
+                nlink:ROOT_INODE.get_num_link(ino),
+            };
         }
     }
 }

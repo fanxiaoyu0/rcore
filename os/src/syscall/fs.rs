@@ -82,17 +82,19 @@ pub fn sys_close(fd: usize) -> isize {
 // YOUR JOB: 扩展 easy-fs 和内核以实现以下三个 syscall
 pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
     let task = current_task().unwrap();
-    let mut inner = task.inner_exclusive_access();
-    if inner.fd_table.len()<=_fd{
+    let inner = task.inner_exclusive_access();
+    if _fd >= inner.fd_table.len() {
         return -1;
     }
-    if let Some(f)=&inner.fd_table[_fd]{
-        let f=f.clone();
+    if let Some(file) = &inner.fd_table[_fd]{
+        let file=file.clone();
         drop(inner);
-        f.get_my_state(_st);
+        file.get_file_state(_st);
         return 0;
     }
-    return -1;
+    else {
+        return -1;
+    }
 }
 
 pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
