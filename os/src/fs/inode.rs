@@ -140,14 +140,12 @@ pub fn open_file(name: &str, flags: OpenFlags) -> Option<Arc<OSInode>> {
     }
 }
 
-pub fn my_linkat(last:&str,now:&str)->isize{
-    let result=ROOT_INODE.my_linkat(last,now);
-    return result;
+pub fn linkat(old_name:&str,new_name:&str)->isize{
+    return ROOT_INODE.linkat(old_name,new_name);
 }
 
-pub fn my_unlinkat(name:&str)->isize{
-    let result=ROOT_INODE.my_unlinkat(name);
-    return result;
+pub fn unlinkat(name:&str)->isize{
+    return ROOT_INODE.unlinkat(name);
 }
 
 impl File for OSInode {
@@ -182,19 +180,19 @@ impl File for OSInode {
         let page_table=PageTable::from_token(current_user_token());
         let ppn=page_table.translate(virtual_address.floor()).unwrap().ppn().0;
         let physical_address=ppn<<12|virtual_address.page_offset();
-        let mut inner=self.inner.exclusive_access();
+        let inner=self.inner.exclusive_access();
         unsafe {
             let mut file_type=StatMode::FILE;
             if inner.inode.as_ref().get_inode_type() {
                 file_type=StatMode::DIR;
             }
-            let ino = inner.inode.as_ref().get_i_id() as u32;
+            let ino = inner.inode.as_ref().get_inode_id();
             *(physical_address as *mut Stat)=Stat{
                 dev:0,
                 mode:file_type,
-                ino:inner.inode.as_ref().get_i_id() as u64,
+                ino:ino as u64,
                 pad:[0u64;7],
-                nlink:ROOT_INODE.get_num_link(ino),
+                nlink:ROOT_INODE.get_link_count(ino as u32),
             };
         }
     }

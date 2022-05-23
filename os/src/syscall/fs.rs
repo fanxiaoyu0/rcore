@@ -98,15 +98,13 @@ pub fn sys_fstat(_fd: usize, _st: *mut Stat) -> isize {
 }
 
 pub fn sys_linkat(_old_name: *const u8, _new_name: *const u8) -> isize {
-    let current_token=current_user_token();
-    let now=translated_str(current_token,_new_name);
-    let last=translated_str(current_token,_old_name);
-    let result=my_linkat(last.as_str(), now.as_str());
-    return result;
+    let token = current_user_token();
+    let new_name=translated_str(token,_new_name);
+    let old_name=translated_str(token,_old_name);
+    return linkat(old_name.as_str(), new_name.as_str());
 }
 
 pub fn sys_unlinkat(_name: *const u8) -> isize {
-    let current_token=current_user_token();
-    let result=my_unlinkat(translated_str(current_token,_name).as_str());
-    return result;
+    let token=current_user_token();
+    return unlinkat(translated_str(token,_name).as_str());
 }
