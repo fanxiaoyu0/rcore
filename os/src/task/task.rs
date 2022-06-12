@@ -6,7 +6,7 @@ use crate::trap::TrapContext;
 use crate::{mm::PhysPageNum, sync::UPSafeCell};
 use alloc::sync::{Arc, Weak};
 use core::cell::RefMut;
-
+use alloc::vec::Vec;
 /// Task control block structure
 ///
 /// Directly save the contents that will not change during running
@@ -34,6 +34,10 @@ pub struct TaskControlBlockInner {
     pub exit_code: Option<i32>,
     /// Tid and ustack will be deallocated when this goes None
     pub res: Option<TaskUserRes>,
+    pub mutex_alloc:Vec<usize>,
+    pub mutex_need:Vec<usize>,
+    pub sem_alloc:Vec<usize>,
+    pub sem_need:Vec<isize>,
 }
 
 /// Simple access to its internal fields
@@ -73,6 +77,34 @@ impl TaskControlBlock {
                     task_cx: TaskContext::goto_trap_return(kstack_top),
                     task_status: TaskStatus::Ready,
                     exit_code: None,
+                    mutex_need:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    mutex_alloc:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    sem_alloc:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    sem_need:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
                 })
             },
         }
@@ -124,6 +156,34 @@ impl TaskControlBlock {
                     task_cx: context,
                     task_status: TaskStatus::Ready,
                     exit_code: None,
+                    mutex_need:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    mutex_alloc:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    sem_alloc:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
+                    sem_need:{
+                        let mut vect=Vec::new();
+                        for i in 0..20{
+                            vect.push(0);
+                        }
+                        vect
+                    },
                 })
             },
         }
