@@ -125,7 +125,7 @@ pub fn is_dead_mutex(detect:usize)->bool{
     }
     for i in 0..inner.mutex_list.len(){
         if let Some(mtx) = &mut inner.mutex_list[i]{
-            if mtx.islocked()==1{
+            if mtx.is_locked()==1{
                 work.push(1);
             }
         }
