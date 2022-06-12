@@ -1,0 +1,1 @@
+initSidebarItems({"constant":[["DIRENT_SZ","Size of a directory entry"]],"enum":[["DiskInodeType","Type of a disk inode"]],"struct":[["DirEntry","A directory entry"],["DiskInode","A disk inode"],["SuperBlock","Super block of a filesystem"]]});
